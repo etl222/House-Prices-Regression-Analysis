@@ -1,0 +1,23 @@
+"0","# Install Packages
+# detach(""package:rlang"", unload=TRUE)
+# install.packages(""rlang"", dependencies = TRUE)
+# install.packages(""dplyr"")
+install.packages(""caret"", dependencies = TRUE)
+"
+"2","WARNING: Rtools is required to build R packages but is not currently installed. Please download and install the appropriate version of Rtools before proceeding:
+
+https://cran.rstudio.com/bin/windows/Rtools/
+"
+"2","Installing package into ‘C:/Users/user/AppData/Local/R/win-library/4.2’
+(as ‘lib’ is unspecified)
+"
+"2","also installing the dependencies ‘listenv’, ‘parallelly’, ‘future’, ‘globals’, ‘R.methodsS3’, ‘R.oo’, ‘R.utils’, ‘bitops’, ‘shape’, ‘future.apply’, ‘progressr’, ‘SQUAREM’, ‘R.cache’, ‘caTools’, ‘TH.data’, ‘profileModel’, ‘plotrix’, ‘diagram’, ‘lava’, ‘miniUI’, ‘styler’, ‘classInt’, ‘gplots’, ‘libcoin’, ‘matrixStats’, ‘multcomp’, ‘iterators’, ‘clock’, ‘gower’, ‘hardhat’, ‘timeDate’, ‘brglm’, ‘gtools’, ‘qvcalc’, ‘Formula’, ‘plotmo’, ‘prodlim’, ‘combinat’, ‘questionr’, ‘ROCR’, ‘mvtnorm’, ‘modeltools’, ‘strucchange’, ‘coin’, ‘zoo’, ‘sandwich’, ‘ISwR’, ‘corpcor’, ‘ROSE’, ‘e1071’, ‘foreach’, ‘ModelMetrics’, ‘pROC’, ‘recipes’, ‘reshape2’, ‘BradleyTerry2’, ‘Cubist’, ‘earth’, ‘ellipse’, ‘fastICA’, ‘gam’, ‘ipred’, ‘kernlab’, ‘klaR’, ‘mda’, ‘mlbench’, ‘MLmetrics’, ‘pamr’, ‘party’, ‘pls’, ‘proxy’, ‘RANN’, ‘spls’, ‘subselect’, ‘superpc’, ‘themis’
+
+"
+"1","
+"
+"1",""
+"1","  There are binary versions available but the source versions are later"
+"1",""
+"1",":
+"

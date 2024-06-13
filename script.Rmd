@@ -1,0 +1,375 @@
+---
+title: "Math1312 Regression Analysis :  House-Prices-Regression-Analysis"
+author: "s3866360 : EI THIRI LWIN"
+date: "2024-06-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+# Install Packages
+detach("package:rlang", unload=TRUE)
+install.packages("rlang", dependencies = TRUE)
+install.packages("dplyr")
+install.packages("caret", dependencies = TRUE)
+
+```
+# Introduction
+## Background
+Predicting housing prices is a critical task in the real estate market, providing valuable insights for buyers, sellers, real estate agents, and policymakers. Accurate price predictions help in making informed decisions regarding property investments, sales, and urban planning.
+
+## Objective
+The primary objective of this study is to build a robust regression model to predict housing prices using a dataset from Kaggle. The analysis aims to identify significant predictors and assess the model's performance in accurately predicting housing prices.
+
+## Dataset Description
+The dataset used in this study is the "House Prices - Advanced Regression Techniques" dataset from Kaggle. It contains 1460 observations and 81 variables, including both numerical and categorical data. 
+Key variables include:  
+
+Numerical Variables: Lot Area, Year Built, Gr Liv Area, Total Bsmt SF, etc. 
+Categorical Variables: MS Zoning, Neighborhood, House Style, etc. 
+
+Initial data inspection revealed the presence of missing values in several variables, which were addressed during the data preprocessing phase. Exploratory Data Analysis (EDA) was performed to understand the distribution of SalePrice and its relationships with other variables. The dataset can be accessed at: House Prices - Advanced Regression Techniques (https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
+
+
+# Methodology and Analysis
+## Data Loading and Initial Inspection
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+library(dplyr)
+library(caret)
+library(car)
+```
+
+```{r}
+
+# Load the dataset
+train <- read.csv("train.csv")
+test <- read.csv("test.csv")
+
+# Check the structure of the dataset
+str(train)
+
+```
+## Exploratory Data Analysis (EDA)
+### Summary Statistics
+
+```{r}
+# Summary statistics of the dataset
+summary(train)
+```
+
+```{r}
+# Descriptive statistics for numerical variables
+numeric_vars <- train %>% select_if(is.numeric)
+summary(numeric_vars)
+
+```
+### Data visualization
+```{r}
+# Histogram of SalePrice
+ggplot(train, aes(x = SalePrice)) +
+  geom_histogram(binwidth = 10000, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of SalePrice", x = "SalePrice", y = "Count")
+```
+```{r}
+# Boxplots for categorical variables
+# MSZoning vs SalePrice
+ggplot(train, aes(x = MSZoning, y = SalePrice)) +
+  geom_boxplot(fill = "blue", alpha = 0.7) +
+  labs(title = "SalePrice by MSZoning", x = "MSZoning", y = "SalePrice")
+```
+```{r}
+# Neighborhood vs SalePrice
+ggplot(train, aes(x = reorder(Neighborhood, SalePrice, FUN = median), y = SalePrice)) +
+  geom_boxplot(fill = "blue", alpha = 0.7) +
+  labs(title = "SalePrice by Neighborhood", x = "Neighborhood", y = "SalePrice") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+```{r}
+# Scatter plots for numerical variables
+# GrLivArea vs SalePrice
+ggplot(train, aes(x = GrLivArea, y = SalePrice)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "SalePrice vs GrLivArea", x = "GrLivArea", y = "SalePrice")
+```
+
+```{r}
+# TotalBsmtSF vs SalePrice
+ggplot(train, aes(x = TotalBsmtSF, y = SalePrice)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "SalePrice vs TotalBsmtSF", x = "TotalBsmtSF", y = "SalePrice")
+```
+### Correlation Analysis
+```{r}
+# Select numerical variables
+numeric_vars <- train %>% select_if(is.numeric)
+
+# Calculate the correlation matrix
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+# Visualize the correlation matrix using a heatmap
+library(corrplot)
+
+# Plotting the heatmap
+corrplot(cor_matrix, method = "color", tl.cex = 0.6, number.cex = 0.7, addCoef.col = "black", tl.col = "black", order = "AOE")
+
+```
+## Multiple Regression Estimation 
+### Step 1: Data Preparation
+First, I'll handle missing values and convert categorical variables to factors.
+```{r}
+# Handle missing values
+# For simplicity, we'll replace NA values with the median for numerical variables
+numeric_vars <- train %>% select_if(is.numeric)
+for (col in colnames(numeric_vars)) {
+  train[is.na(train[[col]]), col] <- median(train[[col]], na.rm = TRUE)
+}
+
+# Convert categorical variables to factors
+categorical_vars <- train %>% select_if(is.character)
+for (col in colnames(categorical_vars)) {
+  train[[col]] <- as.factor(train[[col]])
+}
+
+```
+
+### Step 2: Feature Selection
+Select relevant features for the regression model. I will use some of the most correlated features identified earlier.
+```{r}
+# Select relevant features based on correlation analysis
+selected_features <- c("OverallQual", "GrLivArea", "GarageCars", "TotalBsmtSF", "FullBath", "YearBuilt", "YearRemodAdd")
+
+# Prepare the dataset for modeling
+model_data <- train %>% select(SalePrice, all_of(selected_features))
+
+```
+
+### Step 3: Build the Regression Model
+I'll use the lm function to build the multiple regression model.
+```{r}
+# Build the multiple regression model
+model <- lm(SalePrice ~ ., data = model_data)
+
+# Display the summary of the model
+summary(model)
+
+```
+### Step 4: Model Diagnostics
+After building the model, I need to check for assumptions like normality, homoscedasticity, and multicollinearity.
+```{r}
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model)
+
+# Check for multicollinearity
+vif(model)
+
+```
+### Step 5: Predictions and Model Validation
+Split the data into training and validation sets, train the model on the training set, and validate it on the validation set.
+```{r}
+# Split the data into training and validation sets
+set.seed(123)
+train_index <- createDataPartition(model_data$SalePrice, p = 0.8, list = FALSE)
+train_set <- model_data[train_index, ]
+validation_set <- model_data[-train_index, ]
+
+# Train the model on the training set
+train_model <- lm(SalePrice ~ ., data = train_set)
+
+# Predict on the validation set
+predictions <- predict(train_model, newdata = validation_set)
+
+# Calculate validation metrics
+validation_results <- data.frame(Actual = validation_set$SalePrice, Predicted = predictions)
+rmse <- sqrt(mean((validation_results$Actual - validation_results$Predicted)^2))
+mae <- mean(abs(validation_results$Actual - validation_results$Predicted))
+
+list(RMSE = rmse, MAE = mae)
+
+```
+## Model assessment
+```{r}
+# Assess the performance of the regression model
+
+# 1. Residual Analysis
+# Plot residuals vs fitted values
+plot(model$fitted.values, residuals(model), 
+     xlab = "Fitted values", ylab = "Residuals", 
+     main = "Residuals vs Fitted values")
+abline(h = 0, col = "red")
+
+# Normal Q-Q plot
+qqnorm(residuals(model))
+qqline(residuals(model), col = "red")
+
+# 2. Homoscedasticity
+# Scale-Location plot
+plot(model, which = 3)
+
+# 3. Multicollinearity
+# Variance Inflation Factor (VIF)
+vif_values <- vif(model)
+print(vif_values)
+
+# 4. Goodness of Fit
+# R-squared and Adjusted R-squared
+r_squared <- summary(model)$r.squared
+adj_r_squared <- summary(model)$adj.r.squared
+cat("R-squared: ", r_squared, "\n")
+cat("Adjusted R-squared: ", adj_r_squared, "\n")
+
+```
+
+## Model Adequacy Checks (Initial)
+```{r}
+
+# Residual analysis
+par(mfrow = c(2, 2))
+plot(model)
+
+# Check for leverage and influential observations
+influencePlot(model)
+
+# Variance Inflation Factor (VIF) for multicollinearity
+vif_values <- vif(model)
+print(vif_values)
+
+# Residuals vs Fitted values
+plot(model$fitted.values, residuals(model), 
+     xlab = "Fitted values", ylab = "Residuals", 
+     main = "Residuals vs Fitted values")
+abline(h = 0, col = "red")
+
+# Normal Q-Q plot
+qqnorm(residuals(model))
+qqline(residuals(model), col = "red")
+
+```
+I conclude that some assumptions of the regression model are not fully satisfied and need to iterate back to model specification to address these issues.
+
+## Model Adequacy Checks (Re-specified Model and Diagnostic Plots)
+Iterating Back to Model Specification
+```{r}
+# Re-specify the model by adding interaction terms and polynomial terms
+model2 <- lm(SalePrice ~ GrLivArea * OverallQual + I(GrLivArea^2) + OverallQual + YearBuilt + TotalBsmtSF + GarageCars, data = train)
+
+# Fit the new model
+summary(model2)
+
+# Perform residual analysis and diagnostic checks again
+par(mfrow = c(2, 2))
+plot(model2)
+
+# Check for leverage and influential observations
+influencePlot(model2)
+
+# Variance Inflation Factor (VIF) for multicollinearity
+vif_values2 <- vif(model2)
+print(vif_values2)
+
+# Residuals vs Fitted values
+plot(model2$fitted.values, residuals(model2), 
+     xlab = "Fitted values", ylab = "Residuals", 
+     main = "Residuals vs Fitted values")
+abline(h = 0, col = "red")
+
+# Normal Q-Q plot
+qqnorm(residuals(model2))
+qqline(residuals(model2), col = "red")
+
+```
+## Model Diagnostic Checks
+I will perform diagnostic checks to identify leverage and influential observations, check for multicollinearity, and analyze their impact on the model's results and interpretation.
+```{r}
+
+# Cook's Distance
+cooksd <- cooks.distance(model2)
+plot(cooksd, pch="*", cex=1.5, main="Cook's Distance", ylab="Cook's Distance")
+abline(h = 4/length(cooksd), col="red")  # Add a horizontal line at 4/n
+text(x=1:length(cooksd)+1, y=cooksd, labels=ifelse(cooksd>4/length(cooksd), names(cooksd),""), col="red", pos=4, cex=0.7)
+
+# Leverage Plot
+leveragePlots(model2)
+
+# Checking for multicollinearity using VIF
+vif_values <- vif(model2)
+print(vif_values)
+
+# Plotting standardized residuals to check for homoscedasticity
+plot(model2, which=1)
+
+# Normal Q-Q plot for residuals
+qqPlot(model2, main="Q-Q Plot")
+
+
+```
+## Implementation of Suitable Corrective Methods
+Corrective Action: Removing Influential Observations
+```{r}
+# Remove influential observations
+train_clean <- train[-c(524, 1299), ]
+
+```
+Corrective Action: Revising the Model to Address Multicollinearity
+```{r}
+# Revised model after removing influential observations and addressing multicollinearity
+model3 <- lm(SalePrice ~ GrLivArea + OverallQual + YearBuilt + TotalBsmtSF + GarageCars, data=train_clean)
+summary(model3)
+
+```
+## Variable Selection
+Backward Elimination
+```{r}
+# Backward Elimination
+model_backward <- step(model3, direction="backward")
+summary(model_backward)
+
+```
+Forward Selection
+```{r}
+# Forward Selection
+model_forward <- step(lm(SalePrice ~ 1, data=train_clean), direction="forward", scope=formula(model3))
+summary(model_forward)
+
+```
+Stepwise Selection
+```{r}
+# Stepwise Selection
+model_stepwise <- step(model3, direction="both")
+summary(model_stepwise)
+
+```
+## Model Validation
+```{r}
+set.seed(123)
+train_indices <- sample(seq_len(nrow(train_clean)), size = 0.7*nrow(train_clean))
+train_split <- train_clean[train_indices, ]
+test_split <- train_clean[-train_indices, ]
+
+# Train the final model on the training set
+final_model <- lm(SalePrice ~ GrLivArea + OverallQual + YearBuilt + TotalBsmtSF + GarageCars, data=train_split)
+
+# Predict on the test set
+predictions <- predict(final_model, newdata=test_split)
+
+# Calculate RMSE and MAE
+rmse <- sqrt(mean((test_split$SalePrice - predictions)^2))
+mae <- mean(abs(test_split$SalePrice - predictions))
+
+rmse
+mae
+
+```
+
